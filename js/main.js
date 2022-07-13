@@ -1,164 +1,9 @@
-const BLOCKS = {
-    square: [
-      [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1],
-      ],
-      [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1],
-      ],
-      [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1],
-      ],
-      [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1],
-      ],
-    ],
-    bar: [
-        [
-            [1, 0],
-            [2, 0],
-            [3, 0],
-            [4, 0],
-          ],
-          [
-            [2, -1],
-            [2, 0],
-            [2, 1],
-            [2, 2],
-          ],
-          [
-            [1, 0],
-            [2, 1],
-            [3, 0],
-            [4, 1],
-          ],
-          [
-            [2, -1],
-            [2, 0],
-            [2, 1],
-            [2, 2],
-          ],
-        ],
-    tree: [
-        [
-            [1, 0],
-            [0, 1],
-            [1, 1],
-            [2, 1],
-          ],
-          [
-            [1, 0],
-            [0, 1],
-            [1, 1],
-            [1, 2],
-          ],
-          [
-            [2, 1],
-            [0, 1],
-            [1, 1],
-            [1, 2],
-          ],
-          [
-            [2, 1],
-            [1, 2],
-            [1, 1],
-            [1, 0],
-          ],
-        ],
-    zee: [
-        [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [2, 1],
-          ],
-          [
-            [0, 1],
-            [1, 0],
-            [1, 1],
-            [0, 2],
-          ],
-          [
-            [0, 1],
-            [1, 1],
-            [1, 2],
-            [2, 2],
-          ],
-          [
-            [2, 0],
-            [2, 1],
-            [1, 1],
-            [1, 2],
-          ],
-        ],
-    elLeft: [
-        [
-            [0, 0],
-            [0, 1],
-            [1, 1],
-            [2, 1],
-          ],
-          [
-            [1, 0],
-            [1, 1],
-            [1, 2],
-            [0, 2],
-          ],
-          [
-            [0, 1],
-            [1, 1],
-            [2, 1],
-            [2, 1],
-          ],
-          [
-            [1, 0],
-            [2, 0],
-            [1, 1],
-            [1, 2],
-          ],
-        ],
-    elRight: [
-        [
-            [1, 0],
-            [2, 0],
-            [1, 0],
-            [1, 2],
-          ],
-          [
-            [0, 0],
-            [0, 1],
-            [1, 1],
-            [2, 1],
-          ],
-          [
-            [0, 2],
-            [1, 0],
-            [1, 1],
-            [1, 2],
-          ],
-          [
-            [0, 1],
-            [1, 1],
-            [2, 1],
-            [2, 2],
-          ],
-        ],
-    };
+import BLOCKS from "./blocks.js";
 // DOM
 const playground = document.querySelector(".playground > ul");
-
+const gameText = document.querySelector(".game-text");
+const scoreDisplay = document.querySelector(".score");
+const restartButton = document.querySelector(".game-text > button")
 //Setting
 const GAME_ROWS = 20;
 const GAME_COLS = 10;
@@ -211,8 +56,12 @@ function renderBlocks(moveType = ""){
             target.classList.add(type, "moving")
         } else {
             tempMovingItem = { ...movingItem }
+            if(moveType === 'retry'){
+              clearInterval(downInterval)  
+              showGameoverText()
+            }
             setTimeout(()=> {
-                renderBlocks();
+                renderBlocks('retry');
                 if(moveType === "top"){
                     seizeBlock();
                 }
@@ -230,7 +79,27 @@ function seizeBlock(){
         moving.classList.remove("moving");
         moving.classList.add("seized"); 
     })
-    generateNewBlock()
+    checkMatch()
+}
+function checkMatch(){
+
+  const childNodes = playground.childNodes;
+  childNodes.forEach(child=>{
+    let matched =true;
+    child.children[0].childNodes.forEach(li=>{
+      if(li.classList.contains("seized")){
+          matched = false;
+      }
+    })
+    if(matched){
+      child.remove();
+      prependNewLine()
+      score++;
+      scoreDisplay.innerText = score;
+    }
+  })
+
+  generateNewBlock()
 }
 function generateNewBlock() {
 
@@ -265,6 +134,15 @@ function changeDirection(){
     renderBlocks()
 }
 
+function dropBlock() {
+  clearInterval(downInterval);
+  downInterval = setInterval(()=>{
+    moveBlock("top",1);
+  } ,10)
+}
+function showGameoverText(){
+  gameText.style.dispaly = "flex";
+}
 //event handling
 document.addEventListener("keydown", e=>{
     switch(e.keyCode){
@@ -277,11 +155,19 @@ document.addEventListener("keydown", e=>{
         case 38:
             changeDirection();
             break;
+        case 32:
+            dropBlock();
+            break;
         case 40:
             moveBlock("top", 1);
             break;
-        
         default:
             break;
     }
+})
+
+restartButton.addEventListener("click",()=>{
+  playground.innerHTML = "";
+  gameText.style.dispaly = "none";
+  init()
 })
